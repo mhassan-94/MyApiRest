@@ -14,7 +14,7 @@ server.use(bodyParser.json());
 
 // ROUTES //
 server.get('/', (req, res) => {
-    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Type', 'application/json');
     res.status(200).send('<h1>Bonjour server</h1>')
 })
 

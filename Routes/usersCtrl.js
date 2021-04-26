@@ -38,10 +38,10 @@ module.exports = {
                     attributes: ['email'],
                     where: { email: email }
                   })
-                  .then(function(userFound) {
+                  .then((userFound) => {
                     done(null, userFound);
                   })
-                  .catch(function(err) {
+                  .catch((err) => {
                     return res.status(500).json({ 'error': 'unable to verify user' });
                   });
               },
@@ -114,16 +114,23 @@ module.exports = {
         });
     },
     getUserProfile: (req, res) => {
-        //auth header//
-        var headerAuth = req.headers['authorization'];
-        var userId = jwtUtils.getUserId(headerAuth);
-
-        if (userId < 0)
-        return res.status(400).json({'error':'wrong token'});
-
         models.User.findOne({
             attributes: [ 'id', 'email', 'username', 'bio' ],
-            where: { id: userId }
+            where: { id: req.params.id }
+        }).then((user) => {
+            if (user) {
+              res.status(201).json(user);
+            } else {
+              res.status(404).json({ 'error': 'user not found' });
+            }
+        }).catch((err) => {
+            res.status(500).json({ 'error': 'cannot fetch user' });
+        });
+    },
+    getAllUserProfile: (req, res) => {
+        
+        models.User.findAll({
+            attributes: [ 'id', 'email', 'username', 'bio' ],
         }).then((user) => {
             if (user) {
               res.status(201).json(user);
@@ -174,5 +181,42 @@ module.exports = {
             return res.status(500).json({ 'error': 'cannot update user profile' });
             }
         });
-    }
+    },
+    deleteUser: (req, res) => {
+
+      asyncLib.waterfall([
+          (done) => {
+              models.User.findOne({
+                  where : {id: req.params.id}
+              })
+              .then((userFound) => {
+                  done(null, userFound);
+              })
+              .catch(function(err) {
+                  return res.status(500).json({ 'error' : 'unable to verify user'});
+              });
+          },
+          (userFound, done) => {
+              if(userFound){
+                  userFound.destroy({
+                  })
+                  .then((userFound) => {
+                      done(null, userFound);
+                  })
+                  .catch((err) => {
+                      return res.status(500).json({ 'error' : 'unable to destroy user'});
+                  });
+              } else {
+                  res.status(404).json({ 'error' : 'user not found'});
+              }
+          }
+      ],
+      (userFound) => {
+          if(!userFound){
+              return res.status(200).json({ 'message' : 'User successfully deleted'});
+          } else {
+              return res.status(500).json({ 'error' : 'cannot delete user'});
+          }
+      });
+    } 
 }
